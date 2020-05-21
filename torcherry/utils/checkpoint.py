@@ -16,13 +16,13 @@ from .util import ContinualTrain
 from ..core import Runner
 
 
-class CheckBase(metaclass=abc.ABCMeta):
+class _CheckBase(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def check2save(self, cls:Runner, epoch: int):
         pass
 
 
-class CheckBestValAcc(CheckBase):
+class CheckBestValAcc(_CheckBase):
     def __init__(self):
         self.best_val_top1 = -math.inf
 
@@ -38,7 +38,7 @@ class CheckBestValAcc(CheckBase):
                        os.path.join(cls.model_dir, 'lr-sdl-nn-best-val-top-1.tar'))
 
 
-class CheckContinueTrain(CheckBase):
+class CheckContinueTrain(_CheckBase):
     def __init__(self, continual_save_freq):
         self.continual_save_freq = continual_save_freq
 
@@ -48,7 +48,7 @@ class CheckContinueTrain(CheckBase):
                                 cls.val_best_top_1)
 
 
-class CheckFrequence(CheckBase):
+class CheckFrequence(_CheckBase):
     def __init__(self, checkpoint_save_freq):
         self.checkpoint_save_freq = checkpoint_save_freq
 

@@ -6,6 +6,7 @@
 
 import os
 import time
+import warnings
 
 import copy
 import pickle
@@ -13,6 +14,8 @@ import pickle
 
 import torch
 import torch.nn as nn
+
+from ..module import CherryModule
 
 
 class ContinualTrain(object):
@@ -59,11 +62,11 @@ class ContinualTrain(object):
 
 
 # Solve the problem that model with single gpu load checkpoints of parallel models
-def load_model(is_multi_gpus: bool, model: nn.Module, model_path: str):
+def load_model(is_multi_gpus: bool, use_gpu: bool, model: CherryModule, model_path: str):
     pretrained_dict = torch.load(model_path)
     is_checkpoint_parallel = list(pretrained_dict.keys())[0].startswith('module.')
 
-    if is_multi_gpus:
+    if is_multi_gpus and use_gpu:
         print("DataParallel...")
         if is_checkpoint_parallel:
             model = nn.DataParallel(model)
@@ -83,25 +86,9 @@ def load_model(is_multi_gpus: bool, model: nn.Module, model_path: str):
     return model
 
 
-def num_para_calcular(net):
-    params = list(net.parameters())
-    k = 0
-    for i in params:
-        l = 1
-    #     print("该层的结构：" + str(list(i.size())))
-        for j in i.size():
-            l *= j
-    #     print("该层参数和：" + str(l))
-        k = k + l
-    print(r"Total Params：" + str(k))
-
-
 def create_nonexistent_folder(abs_path):
     if os.path.exists(abs_path):
-        raise FileExistsError("Folder exists.")
+        warnings.warn("Folder %s exists." % abs_path)
     else:
         os.makedirs(abs_path)
-
-
-
 

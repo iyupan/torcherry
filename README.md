@@ -3,4 +3,10 @@
 
 # torcherry
 
-## ToDO
+## Install
+
+It is easy to install by command:
+
+```shell script
+pip install torcherry
+```

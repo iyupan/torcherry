@@ -117,3 +117,4 @@ dmypy.json
 .idea
 save
 dataset
+MNIST

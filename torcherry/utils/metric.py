@@ -9,7 +9,7 @@ import abc
 import torch
 
 
-class MetricBase(metaclass=abc.ABCMeta):
+class _MetricBase(metaclass=abc.ABCMeta):
     @abc.abstractmethod
     def add_metric_record(self, logits, target, loss):
         pass
@@ -19,7 +19,7 @@ class MetricBase(metaclass=abc.ABCMeta):
         pass
 
 
-class MetricAccuracy(MetricBase):
+class MetricAccuracy(_MetricBase):
     def __init__(self, top_k):
         self.top_k = top_k
         self.correct_num = 0
@@ -39,7 +39,7 @@ class MetricAccuracy(MetricBase):
             raise ValueError("The parameter data_num should not be None.")
 
 
-class MetricLoss(MetricBase):
+class MetricLoss(_MetricBase):
     def __init__(self):
         self.loss = 0
         self.data_num = 0

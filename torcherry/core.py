@@ -41,7 +41,7 @@ class Runner(object):
     def fit(self, model: CherryModule, train_loader=None, optimizer=None, lr_schedule=None, train_step_func=None,
             save_path="./save", tensorboard=True, train_callbacks=None, val_callbacks=None, val_loader=None,
             continual_train_model_dir=None, record_setting: str = None, pre_train_model_path=None, train_epochs=0,
-            checkpoint_callbacks=None, val_step_func=None):
+            checkpoint_callbacks=None, val_step_func=None, model_dir=None, log_dir=None, tbflush_feq=3):
 
         self.model = model
         self.model.to(self.device)
@@ -67,16 +67,14 @@ class Runner(object):
             self.val_step_func = model.tc_val_step
 
         if train_loader:
-            self.train_loader = train_loader()
+            self.train_loader = train_loader
         else:
             self.train_loader = model.tc_train_loader()
 
         if val_loader:
-            self.val_loader = val_loader()
+            self.val_loader = val_loader
         else:
             self.val_loader = model.tc_val_loader()
-
-        self.save_path = save_path
 
         # ----------------- Continual Training -------------------------
         # Load Model, Optimizer
@@ -93,14 +91,14 @@ class Runner(object):
             self.lr_schedule.load_state_dict(torch.load(lr_schedule_path))
 
             print("Loading the Model of Epoch %d..." % self.lr_schedule.last_epoch)
-            self.model = load_model(self.multi_gpus, self.model, model_path)
+            self.model = load_model(self.multi_gpus, self.use_cuda, self.model, model_path)
             self.train_start_epoch = self.lr_schedule.last_epoch
             self.val_best_top_1 = best_top_1
 
         else:
             # ------------------- Set Model-Save Path ----------------------
 
-            self.model_root = self.save_path
+            self.model_root = save_path
             if not os.path.exists(self.model_root):
                 os.makedirs(self.model_root)
 
@@ -111,23 +109,32 @@ class Runner(object):
 
             # ------------------- Set Models-Save Path ----------------------
 
-            self.model_dir = os.path.join(self.model_root, "checkpoint")
+            if model_dir:
+                self.model_dir = model_dir
+            else:
+                self.model_dir = os.path.join(self.model_root, "checkpoint")
             create_nonexistent_folder(self.model_dir)
 
             # ------------------- Set Logs-Save Path ----------------------
 
-            self.log_dir = os.path.join(self.model_root, "logs")
+            if log_dir:
+                self.log_dir = log_dir
+            else:
+                self.log_dir = os.path.join(self.model_root, "logs")
+
             create_nonexistent_folder(self.log_dir)
+
+            # Load Pretrained Model
 
             if pre_train_model_path:
                 print("Loading Pre-trained Model...")
-                model = load_model(self.multi_gpus, self.model, pre_train_model_path)
+                self.model = load_model(self.multi_gpus, self.use_cuda, self.model, pre_train_model_path)
 
             # ------------- Assign Model to GPUS ----------------------
 
             if self.multi_gpus and self.use_cuda:
                 print("DataParallel...")
-                model = nn.DataParallel(model)
+                self.model = nn.DataParallel(model)
 
         # ------------------- Set Summary Writer ----------------------
         if tensorboard:
@@ -166,12 +173,11 @@ class Runner(object):
 
             # Test Training Dataset
             if train_callbacks:
-                # training_metrics = [MetricAccuracy(1), MetricLoss(criterion)]
                 print("Evaluating Training Data...")
                 if model.train_loader_type == "dali":
-                    training_metrics = self.eval_model_by_dali(self.train_loader, train_callbacks)
+                    training_metrics = self._val_by_dali(self.train_loader, train_callbacks)
                 elif model.train_loader_type == "torchvision":
-                    training_metrics = self.eval_model_by_torch(self.train_loader, train_callbacks)
+                    training_metrics = self._val_by_torch(self.train_loader, train_callbacks)
                 else:
                     raise ValueError("The loader_loop_func of Module must be defined!")
 
@@ -187,12 +193,11 @@ class Runner(object):
 
             # Test Testing Dataset
             if val_callbacks:
-                # valing_metrics = [MetricAccuracy(1), MetricAccuracy(5), MetricLoss(criterion)]
                 print("Evaluating Valing Data...")
                 if model.val_loader_type == "dali":
-                    valing_metrics = self.eval_model_by_dali(self.val_loader, val_callbacks)
+                    valing_metrics = self._val_by_dali(self.val_loader, val_callbacks)
                 elif model.val_loader_type == "torchvision":
-                    valing_metrics = self.eval_model_by_torch(self.val_loader, val_callbacks)
+                    valing_metrics = self._val_by_torch(self.val_loader, val_callbacks)
                 else:
                     raise ValueError("The loader_loop_func of Module must be defined!")
 
@@ -220,15 +225,46 @@ class Runner(object):
 
             # flush Tensorboard
             if self.summary_writer:
-                if epoch % 3 == 0:
+                if epoch % tbflush_feq == 0:
                     self.summary_writer.flush()
 
         if self.summary_writer:
             self.summary_writer.close()
         print("Run Over!")
 
-    def test(self):
-        pass
+    def test(self, model, model_path, test_callbacks=None, test_loader=None, test_step_func=None):
+        self.model = model
+        self.model.to(self.device)
+
+        print("Loading Pre-trained Model...")
+        self.model = load_model(self.multi_gpus, self.use_cuda, self.model, model_path)
+
+        if test_loader:
+            self.test_loader = test_loader
+        else:
+            self.test_loader = model.tc_test_loader()
+
+        if test_step_func:
+            self.test_step_func = test_step_func
+        else:
+            self.test_step_func = model.tc_test_step
+
+        # Test Testing Dataset
+        if test_callbacks:
+            print("Testing Model...")
+            if model.test_loader_type == "dali":
+                testing_metrics = self._test_by_dali(self.test_loader, test_callbacks)
+            elif model.test_loader_type == "torchvision":
+                testing_metrics = self._test_by_torch(self.test_loader, test_callbacks)
+            else:
+                raise ValueError("The loader_loop_func of Module must be defined!")
+
+            res_test = []
+            for metric in testing_metrics:
+                res_test.append(metric.get_metric())
+
+            for test_metric in res_test:
+                print(test_metric)
 
     def _dali_step(self, pbar, data_pairs):
         for data_pair in data_pairs:
@@ -257,7 +293,7 @@ class Runner(object):
 
         pbar.update(1)
 
-    def eval_model_by_dali(self, loader, metrics):
+    def _val_by_dali(self, loader, metrics):
 
         metrics_ = copy.deepcopy(metrics)
 
@@ -277,7 +313,7 @@ class Runner(object):
 
         return metrics_
 
-    def eval_model_by_torch(self, loader, metrics):
+    def _val_by_torch(self, loader, metrics):
         metrics_ = copy.deepcopy(metrics)
 
         self.model.eval()
@@ -287,6 +323,43 @@ class Runner(object):
                     data = data_pair[0].to(self.device, non_blocking=True)
                     target = data_pair[1].squeeze().long().to(self.device, non_blocking=True).view(-1)
                     output_logits, loss = self.val_step_func(self.model, data, target)
+
+                    for metric in metrics_:
+                        metric.add_metric_record(output_logits, target, loss)
+
+                    pbar.update(1)
+
+        return metrics_
+
+    def _test_by_dali(self, loader, metrics):
+        metrics_ = copy.deepcopy(metrics)
+
+        self.model.eval()
+        with torch.no_grad():
+            with tqdm(total=len(loader)) as pbar:
+                for data_pairs in loader:
+                    for data_pair in data_pairs:
+                        data = data_pair["data"].to(self.device, non_blocking=True)
+                        target = data_pair["label"].squeeze().long().to(self.device, non_blocking=True).view(-1)
+                        output_logits, loss = self.test_step_func(self.model, data, target)
+
+                        for metric in metrics_:
+                            metric.add_metric_record(output_logits, target, loss)
+
+                        pbar.update(1)
+
+        return metrics_
+
+    def _test_by_torch(self, loader, metrics):
+        metrics_ = copy.deepcopy(metrics)
+
+        self.model.eval()
+        with torch.no_grad():
+            with tqdm(total=len(loader)) as pbar:
+                for data_pair in loader:
+                    data = data_pair[0].to(self.device, non_blocking=True)
+                    target = data_pair[1].squeeze().long().to(self.device, non_blocking=True).view(-1)
+                    output_logits, loss = self.test_step_func(self.model, data, target)
 
                     for metric in metrics_:
                         metric.add_metric_record(output_logits, target, loss)

@@ -14,6 +14,7 @@ class CherryModule(nn.Module):
         super(CherryModule, self).__init__()
         self.train_loader_type = None
         self.val_loader_type = None
+        self.test_loader_type = None
 
     def tc_optimizer(self):
         warnings.warn("Optimizer in the Mould has not been defined!", UserWarning)
@@ -24,6 +25,9 @@ class CherryModule(nn.Module):
     def tc_val_step(self, model, data, target):
         warnings.warn("Valing Step in the Mould has not been defined!", UserWarning)
 
+    def tc_test_step(self, model, data, target):
+        warnings.warn("Valing Step in the Mould has not been defined!", UserWarning)
+
     def tc_lr_schedule(self, optimizer):
         warnings.warn("Learning Rate Schedule in the Mould has not been defined!", UserWarning)
 
@@ -31,4 +35,7 @@ class CherryModule(nn.Module):
         warnings.warn("TrainLoader in the Mould has not been defined!", UserWarning)
 
     def tc_val_loader(self):
-        warnings.warn("TrainLoader in the Mould has not been defined!", UserWarning)
+        warnings.warn("ValLoader in the Mould has not been defined!", UserWarning)
+
+    def tc_test_loader(self):
+        warnings.warn("TestLoader in the Mould has not been defined!", UserWarning)

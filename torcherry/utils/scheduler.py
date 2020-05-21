@@ -7,6 +7,7 @@ from bisect import bisect_right
 
 from torch.optim.lr_scheduler import _LRScheduler
 
+
 class WarmMultiStepLR(_LRScheduler):
     def __init__(self, optimizer, milestones, gamma=0.1, warm_init=0.0001, warm_epoch=10, last_epoch=-1):
         if not list(milestones) == sorted(milestones):

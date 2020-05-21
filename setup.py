@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 
 __author__ = "Perry"
-__version__ = "0.0.1"
+__version__ = "0.0.2"
 
 setup(
       name='torcherry',
