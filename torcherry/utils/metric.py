@@ -11,7 +11,7 @@ import torch
 
 class MetricBase(metaclass=abc.ABCMeta):
     @abc.abstractmethod
-    def add_metric_record(self, logits, target):
+    def add_metric_record(self, logits, target, loss):
         pass
 
     @abc.abstractmethod
@@ -25,7 +25,7 @@ class MetricAccuracy(MetricBase):
         self.correct_num = 0
         self.data_num = 0
 
-    def add_metric_record(self, logits, target):
+    def add_metric_record(self, logits, target, loss):
         self.data_num += logits.size(0)
 
         target_resize = target.view(-1, 1)
@@ -40,15 +40,14 @@ class MetricAccuracy(MetricBase):
 
 
 class MetricLoss(MetricBase):
-    def __init__(self, criterion):
-        self.criterion = criterion
+    def __init__(self):
         self.loss = 0
         self.data_num = 0
 
-    def add_metric_record(self, logits, target):
+    def add_metric_record(self, logits, target, loss):
         self.data_num += logits.size(0)
 
-        self.loss += self.criterion(logits, target).item()
+        self.loss += loss.item()
 
     def get_metric(self):
         if self.data_num:

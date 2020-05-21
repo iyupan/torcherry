@@ -19,6 +19,8 @@ from torchvision.datasets import MNIST
 from torchvision import transforms
 
 import torcherry as tc
+from torcherry.utils.metric import MetricAccuracy, MetricLoss
+from torcherry.utils.checkpoint import CheckBestValAcc, CheckContinueTrain, CheckFrequence
 
 
 class CModel(tc.CherryModule):
@@ -30,12 +32,20 @@ class CModel(tc.CherryModule):
         return torch.relu(self.l1(x.view(x.size(0), -1)))
 
     def tc_train_step(self, model, data, target):
-        y_hat = model(data)
-        loss = F.cross_entropy(y_hat, target)
+        output_logits = model(data)
+        loss = F.cross_entropy(output_logits, target)
         return loss
+
+    def tc_val_step(self, model, data, target):
+        output_logits = model(data)
+        loss = F.cross_entropy(output_logits, target)
+        return output_logits, loss
 
     def tc_optimizer(self):
         return torch.optim.Adam(self.parameters(), lr=0.001)
+
+    def tc_lr_schedule(self, optimizer):
+        return MultiStepLR(optimizer, [90, 130, 170], 0.2)
 
     def tc_train_loader(self):
         self.train_loader_type = "torchvision"
@@ -43,17 +53,25 @@ class CModel(tc.CherryModule):
         loader = DataLoader(dataset, batch_size=32, num_workers=4, shuffle=True)
         return loader
 
-    def tc_lr_schedule(self, optimizer):
-        return MultiStepLR(optimizer, [90, 130, 170], 0.2)
+    def tc_val_loader(self):
+        self.val_loader_type = "torchvision"
+        dataset = MNIST(os.getcwd(), train=False, download=True, transform=transforms.ToTensor())
+        loader = DataLoader(dataset, batch_size=32, num_workers=4, shuffle=True)
+        return loader
+
+
 
 
 if __name__ == '__main__':
-    use_cuda = torch.cuda.is_available()
-    device = torch.device("cuda" if use_cuda else "cpu")
     model = CModel()
 
-    save_path = os.path.join("./save" "tt", time.strftime('%Y%m%d_%H%M%S', time.localtime(time.time())))
+    training_metrics = [MetricAccuracy(1), MetricLoss()]
+    valing_metrics = [MetricAccuracy(1), MetricAccuracy(5), MetricLoss()]
+    check_metrics = [CheckBestValAcc(), CheckContinueTrain(3)]
 
-    runner = tc.Runner()
-    runner.fit(model, device, save_path=save_path, train_epochs=20)
+    save_path = os.path.join("./save", "tt", time.strftime('%Y%m%d_%H%M%S', time.localtime(time.time())))
+
+    runner = tc.Runner(no_cuda=False, seed=30000)
+    runner.fit(model, save_path=save_path, train_epochs=20, train_callbacks=training_metrics,
+               val_callbacks=valing_metrics, checkpoint_callbacks=check_metrics)
     pass

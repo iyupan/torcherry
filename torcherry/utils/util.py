@@ -9,13 +9,10 @@ import time
 
 import copy
 import pickle
-from bisect import bisect_right
+
 
 import torch
 import torch.nn as nn
-from torch.optim.lr_scheduler import _LRScheduler
-
-from tqdm import tqdm
 
 
 class ContinualTrain(object):
@@ -99,55 +96,6 @@ def num_para_calcular(net):
     print(r"Total Params：" + str(k))
 
 
-class WarmMultiStepLR(_LRScheduler):
-    def __init__(self, optimizer, milestones, gamma=0.1, warm_init=0.0001, warm_epoch=10, last_epoch=-1):
-        if not list(milestones) == sorted(milestones):
-            raise ValueError('Milestones should be a list of'
-                             ' increasing integers. Got {}', milestones)
-        self.milestones = milestones
-        self.gamma = gamma
-        self.warm_init = warm_init
-        self.warm_epoch = warm_epoch
-
-        super(WarmMultiStepLR, self).__init__(optimizer, last_epoch)
-
-    def get_lr(self):
-        if self.last_epoch < self.warm_epoch:
-            return  [self.warm_init + self.last_epoch*(base_lr / self.warm_epoch) for base_lr in self.base_lrs]
-        else:
-            return [base_lr * self.gamma ** bisect_right(self.milestones, self.last_epoch)
-                    for base_lr in self.base_lrs]
-
-
-class SteadyWarmMultiStepLR(_LRScheduler):
-    def __init__(self, optimizer, milestones, gamma=0.1, warm_init=0.0001, steady_epoch=None, warm_epoch=10, last_epoch=-1):
-        if not list(milestones) == sorted(milestones):
-            raise ValueError('Milestones should be a list of'
-                             ' increasing integers. Got {}', milestones)
-        self.milestones = milestones
-        self.gamma = gamma
-        self.warm_init = warm_init
-
-        self.warm_epoch = warm_epoch
-        if steady_epoch is None:
-            self.steady_epoch = int(self.warm_epoch / 2)
-        elif steady_epoch > self.warm_epoch:
-            raise ValueError("Steady_Epoch should not larger than Warm_Epoch!")
-        else:
-            self.steady_epoch = steady_epoch
-
-        super(SteadyWarmMultiStepLR, self).__init__(optimizer, last_epoch)
-
-    def get_lr(self):
-        if self.last_epoch < self.steady_epoch:
-            return [self.warm_init for _ in self.base_lrs]
-        if self.last_epoch < self.warm_epoch:
-            return  [self.warm_init + (self.last_epoch - self.steady_epoch)*(base_lr / (self.warm_epoch - self.steady_epoch)) for base_lr in self.base_lrs]
-        else:
-            return [base_lr * self.gamma ** bisect_right(self.milestones, self.last_epoch)
-                    for base_lr in self.base_lrs]
-
-
 def create_nonexistent_folder(abs_path):
     if os.path.exists(abs_path):
         raise FileExistsError("Folder exists.")
@@ -155,44 +103,5 @@ def create_nonexistent_folder(abs_path):
         os.makedirs(abs_path)
 
 
-def eval_model_by_dali(model, device, loader, metrics, gpu_num=1):
-
-    metrics_ = copy.deepcopy(metrics)
-
-    model.eval()
-    with torch.no_grad():
-        with tqdm(total=len(loader)) as pbar:
-            for data_pairs in loader:
-                for data_pair in data_pairs:
-                    data = data_pair["data"].to(device, non_blocking=True)
-                    target = data_pair["label"].squeeze().long().to(device, non_blocking=True).view(-1)
-                    output_logits = model(data)
-
-                    for metric in metrics_:
-                        metric.add_metric_record(output_logits, target)
-
-                    pbar.update(1)
-
-    return metrics_
-
-
-def eval_model_by_torch(model, device, loader, metrics):
-
-    metrics_ = copy.deepcopy(metrics)
-
-    model.eval()
-    with torch.no_grad():
-        with tqdm(total=len(loader)) as pbar:
-            for data_pair in loader:
-                data = data_pair[0].to(device, non_blocking=True)
-                target = data_pair[1].squeeze().long().to(device, non_blocking=True).view(-1)
-                output_logits = model(data)
-
-                for metric in metrics_:
-                    metric.add_metric_record(output_logits, target)
-
-                pbar.update(1)
-
-    return metrics_
 
 
