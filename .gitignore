@@ -116,5 +116,5 @@ dmypy.json
 
 .idea
 save
-dataset
 MNIST
+MNIST_tfrecords
