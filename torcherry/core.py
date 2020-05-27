@@ -39,9 +39,10 @@ class Runner(object):
             torch.backends.cudnn.deterministic = True
 
     def fit(self, model: CherryModule, train_loader=None, optimizer=None, lr_schedule=None, train_step_func=None,
-            save_path="./save", tensorboard=True, train_callbacks=None, val_callbacks=None, val_loader=None,
+            save_path="./save", use_tensorboard=True, train_callbacks=None, val_callbacks=None, val_loader=None,
             continual_train_model_dir=None, record_setting: str = None, pre_train_model_path=None, train_epochs=0,
-            checkpoint_callbacks=None, val_step_func=None, model_dir=None, log_dir=None, tbflush_feq=3):
+            checkpoint_callbacks=None, val_step_func=None, model_dir=None, log_dir=None, tbflush_feq=3,
+            save_ori_model_flag=True):
 
         self.model = model
         self.model.to(self.device)
@@ -124,20 +125,26 @@ class Runner(object):
 
             create_nonexistent_folder(self.log_dir)
 
-            # Load Pretrained Model
-
-            if pre_train_model_path:
-                print("Loading Pre-trained Model...")
-                self.model = load_model(self.multi_gpus, self.use_cuda, self.model, pre_train_model_path)
-
             # ------------- Assign Model to GPUS ----------------------
 
             if self.multi_gpus and self.use_cuda:
                 print("DataParallel...")
                 self.model = nn.DataParallel(model)
 
+            # Load Pretrained Model
+
+            if pre_train_model_path:
+                print("Loading Pre-trained Model...")
+                self.model = load_model(self.multi_gpus, self.use_cuda, self.model, pre_train_model_path)
+            else:
+                if save_ori_model_flag:
+                    print("Saving original model...")
+                    torch.save(self.model.state_dict(),
+                               os.path.join(self.model_dir, 'model-nn-ori.pt'))
+
+
         # ------------------- Set Summary Writer ----------------------
-        if tensorboard:
+        if use_tensorboard:
             self.summary_writer = SummaryWriter(logdir=self.log_dir)
         else:
             self.summary_writer = None

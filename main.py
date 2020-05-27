@@ -84,7 +84,7 @@ class CModel(tc.CherryModule):
 
 if __name__ == '__main__':
     save_path = os.path.join("./save", "tt", time.strftime('%Y%m%d_%H%M%S', time.localtime(time.time())))
-    runner = tc.Runner(no_cuda=False, seed=30000)
+    runner = tc.Runner(no_cuda=False, seed=233)
 
     model = CModel()
 
@@ -93,7 +93,9 @@ if __name__ == '__main__':
     check_metrics = [CheckBestValAcc(), CheckContinueTrain(3)]
 
     runner.fit(model, save_path=save_path, train_epochs=20, train_callbacks=training_metrics,
-               val_callbacks=valing_metrics, checkpoint_callbacks=check_metrics)
+               val_callbacks=valing_metrics, checkpoint_callbacks=check_metrics,
+               pre_train_model_path="/media/windows_e/Ubuntu_Project/Github/torcherry/save/tt/20200527_155328/checkpoint/model-nn-ori.pt",
+               )
 
     # testing_metrics = [MetricAccuracy(1), MetricAccuracy(5), MetricLoss()]
     # runner.test(model, "/media/windows_e/Ubuntu_Project/Github/torcherry/save/tt/20200521_201401/checkpoint/model-nn-best-val-top-1.pt", test_callbacks=testing_metrics)
