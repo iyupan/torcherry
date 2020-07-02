@@ -103,7 +103,7 @@ class Runner(object):
             else:
                 if self.multi_gpus and self.use_cuda:
                     print("DataParallel...")
-                    self.model = nn.DataParallel(model)
+                    self.model = nn.DataParallel(self.model)
 
                 if save_ori_model_flag:
                     print("Saving original model...")
@@ -130,7 +130,7 @@ class Runner(object):
                 self.summary_writer.add_scalar(r"learning_rate", self.optimizer.param_groups[0]['lr'], epoch)
 
             print("\nTraining Epoch: %d/%d" % (epoch, train_epochs - 1), "| Best Top-1:", self.val_best_top_1)
-            model.train()
+            self.model.train()
 
             start_time_epoch = time.time()
             with tqdm(total=len(self.train_loader)) as pbar:
