@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 
 __author__ = "Perry"
-__version__ = "0.0.4"
+__version__ = "0.0.5"
 
 setup(
       name='torcherry',
@@ -12,7 +12,7 @@ setup(
       description='torcherry: a higher framework for pytorch.',
       author=__author__,
       maintainer=__author__,
-      url='https://github.com/perryupan/torcherry',
+      url='https://github.com/perryuu/torcherry',
       packages=find_packages(),
       py_modules=[],
       long_description="Make training models more easy.",

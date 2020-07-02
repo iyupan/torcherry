@@ -24,58 +24,29 @@ from .utils.util import load_model, ContinualTrain, create_nonexistent_folder
 
 
 class Runner(object):
-    def __init__(self, seed=233, no_cuda=False):
-        self.use_cuda = not no_cuda and torch.cuda.is_available()
+    def __init__(self, use_cuda=True):
+        self.use_cuda = use_cuda
         self.gpu_num = torch.cuda.device_count()
         self.multi_gpus = self.gpu_num > 1
         self.device = torch.device("cuda" if self.use_cuda else "cpu")
-
-        random.seed(seed)
-        np.random.seed(seed)
-        torch.manual_seed(seed)
-        if self.use_cuda:
-            torch.cuda.manual_seed_all(seed)
-            torch.backends.cudnn.benchmark = True
-            torch.backends.cudnn.deterministic = True
 
     def fit(self, model: CherryModule, train_loader=None, optimizer=None, lr_schedule=None, train_step_func=None,
             save_path="./save", use_tensorboard=True, train_callbacks=None, val_callbacks=None, val_loader=None,
             continual_train_model_dir=None, record_setting: str = None, pre_train_model_path=None, train_epochs=0,
             checkpoint_callbacks=None, val_step_func=None, model_dir=None, log_dir=None, tbflush_feq=3,
-            save_ori_model_flag=True):
+            save_ori_model_flag=True, load_weight_func=None):
 
         self.model = model
         self.model.to(self.device)
 
-        if optimizer:
-            self.optimizer = optimizer
-        else:
-            self.optimizer = model.tc_optimizer()
+        self.load_weight = load_weight_func if load_weight_func else load_model
 
-        if lr_schedule:
-            self.lr_schedule = lr_schedule(self.optimizer)
-        else:
-            self.lr_schedule = model.tc_lr_schedule(self.optimizer)
-
-        if train_step_func:
-            self.train_step_func = train_step_func
-        else:
-            self.train_step_func = model.tc_train_step
-
-        if val_step_func:
-            self.val_step_func = val_step_func
-        else:
-            self.val_step_func = model.tc_val_step
-
-        if train_loader:
-            self.train_loader = train_loader
-        else:
-            self.train_loader = model.tc_train_loader()
-
-        if val_loader:
-            self.val_loader = val_loader
-        else:
-            self.val_loader = model.tc_val_loader()
+        self.optimizer = optimizer if optimizer else model.tc_optimizer()
+        self.lr_schedule = lr_schedule(self.optimizer) if lr_schedule else model.tc_lr_schedule(self.optimizer)
+        self.train_step_func = train_step_func if train_step_func else model.tc_train_step
+        self.val_step_func = val_step_func if val_step_func else model.tc_val_step
+        self.train_loader = train_loader if train_loader else model.tc_train_loader()
+        self.val_loader = val_loader if val_loader else model.tc_val_loader()
 
         # ----------------- Continual Training -------------------------
         # Load Model, Optimizer
@@ -125,23 +96,19 @@ class Runner(object):
 
             create_nonexistent_folder(self.log_dir)
 
-            # ------------- Assign Model to GPUS ----------------------
-
-            if self.multi_gpus and self.use_cuda:
-                print("DataParallel...")
-                self.model = nn.DataParallel(model)
-
             # Load Pretrained Model
-
             if pre_train_model_path:
                 print("Loading Pre-trained Model...")
-                self.model = load_model(self.multi_gpus, self.use_cuda, self.model, pre_train_model_path)
+                self.model = self.load_weight(self.multi_gpus, self.use_cuda, self.model, pre_train_model_path)
             else:
+                if self.multi_gpus and self.use_cuda:
+                    print("DataParallel...")
+                    self.model = nn.DataParallel(model)
+
                 if save_ori_model_flag:
                     print("Saving original model...")
                     torch.save(self.model.state_dict(),
                                os.path.join(self.model_dir, 'model-nn-ori.pt'))
-
 
         # ------------------- Set Summary Writer ----------------------
         if use_tensorboard:
@@ -238,6 +205,7 @@ class Runner(object):
         if self.summary_writer:
             self.summary_writer.close()
         print("Run Over!")
+        return {"acc": self.val_best_top_1}
 
     def test(self, model, model_path, test_callbacks=None, test_loader=None, test_step_func=None):
         self.model = model

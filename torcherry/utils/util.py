@@ -9,7 +9,10 @@ import time
 import warnings
 
 import copy
+import random
 import pickle
+
+import numpy as np
 
 
 import torch
@@ -17,6 +20,15 @@ import torch.nn as nn
 
 from ..module import CherryModule
 
+
+def set_env_seed(seed, use_cuda):
+    random.seed(seed)
+    np.random.seed(seed)
+    torch.manual_seed(seed)
+    if use_cuda:
+        torch.cuda.manual_seed_all(seed)
+        torch.backends.cudnn.benchmark = True
+        torch.backends.cudnn.deterministic = True
 
 class ContinualTrain(object):
     save_info_name = "keep_training_info.pkl"

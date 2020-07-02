@@ -23,6 +23,7 @@ from torcherry.dataset.dali import get_mnist_iter_dali
 import torcherry as tc
 from torcherry.utils.metric import MetricAccuracy, MetricLoss
 from torcherry.utils.checkpoint import CheckBestValAcc, CheckContinueTrain, CheckFrequence
+from torcherry.utils.util import set_env_seed
 
 
 class CModel(tc.CherryModule):
@@ -83,8 +84,11 @@ class CModel(tc.CherryModule):
 
 
 if __name__ == '__main__':
+    no_cuda = False
+    use_cuda = not no_cuda and torch.cuda.is_available()
+    set_env_seed(233, use_cuda)
+
     save_path = os.path.join("./save", "tt", time.strftime('%Y%m%d_%H%M%S', time.localtime(time.time())))
-    runner = tc.Runner(no_cuda=False, seed=233)
 
     model = CModel()
 
@@ -92,9 +96,9 @@ if __name__ == '__main__':
     valing_metrics = [MetricAccuracy(1), MetricAccuracy(5), MetricLoss()]
     check_metrics = [CheckBestValAcc(), CheckContinueTrain(3)]
 
-    runner.fit(model, save_path=save_path, train_epochs=20, train_callbacks=training_metrics,
+    runner = tc.Runner(use_cuda)
+    res_dict = runner.fit(model, save_path=save_path, train_epochs=20, train_callbacks=training_metrics,
                val_callbacks=valing_metrics, checkpoint_callbacks=check_metrics,
-               pre_train_model_path="/media/windows_e/Ubuntu_Project/Github/torcherry/save/tt/20200527_155328/checkpoint/model-nn-ori.pt",
                )
 
     # testing_metrics = [MetricAccuracy(1), MetricAccuracy(5), MetricLoss()]
