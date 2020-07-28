@@ -63,7 +63,7 @@ class HybridTrainPipe_MNIST(Pipeline):
                                             )
 
     def define_graph(self):
-        inputs = self.input()
+        inputs = self.input(name="Reader")
         output = inputs["image"].gpu()
         output = self.reshape(output)
         output = self.cmnp(output)
@@ -99,7 +99,7 @@ class HybridValPipe_MNIST(Pipeline):
                                             )
 
     def define_graph(self):
-        inputs = self.input()
+        inputs = self.input(name="Reader")
         output = inputs["image"].gpu()
         output = self.reshape(output)
         output = self.cmnp(output)
@@ -123,8 +123,8 @@ def get_mnist_iter_dali(type, image_dir, batch_size, num_threads, seed, dali_cpu
                                               crop=28)
             pip_train.build()
             pipes.append(pip_train)
-        dali_iter_train = Len_DALIClassificationIterator(pipes, size=60000,
-                                                     fill_last_batch=True, auto_reset=auto_reset)
+        dali_iter_train = Len_DALIClassificationIterator(pipes,
+                                                     fill_last_batch=True, auto_reset=auto_reset, reader_name="Reader")
         return dali_iter_train
 
     elif type == 'val':
@@ -134,53 +134,53 @@ def get_mnist_iter_dali(type, image_dir, batch_size, num_threads, seed, dali_cpu
                                           gpu_num=gpu_num, data_dir=image_dir, seed=seed, dali_cpu=dali_cpu)
             pip_val.build()
             pipes.append(pip_val)
-        dali_iter_val = Len_DALIClassificationIterator(pipes, size=10000,
-                                                   fill_last_batch=False, auto_reset=auto_reset)
+        dali_iter_val = Len_DALIClassificationIterator(pipes,
+                                                   fill_last_batch=False, auto_reset=auto_reset, reader_name="Reader")
         return dali_iter_val
 
 
-def get_mnist_iter_torch(type, image_dir, batch_size, num_threads, cutout=0):
-    MNIST_MEAN = [0.1307,]
-    MNIST_STD = [0.3081,]
-    if type == 'train':
-        transform_train = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(MNIST_MEAN, MNIST_STD),
-        ])
-        train_dst = MNIST(root=image_dir, train=True, download=True, transform=transform_train)
-        train_iter = torch.utils.data.DataLoader(train_dst, batch_size=batch_size, shuffle=True, pin_memory=True,
-                                                 num_workers=num_threads)
-        return train_iter
-    else:
-        transform_test = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(MNIST_MEAN, MNIST_STD),
-        ])
-        test_dst = MNIST(root=image_dir, train=False, download=True, transform=transform_test)
-        test_iter = torch.utils.data.DataLoader(test_dst, batch_size=batch_size, shuffle=False, pin_memory=True,
-                                                num_workers=num_threads)
-        return test_iter
+# def get_mnist_iter_torch(type, image_dir, batch_size, num_threads, cutout=0):
+#     MNIST_MEAN = [0.1307,]
+#     MNIST_STD = [0.3081,]
+#     if type == 'train':
+#         transform_train = transforms.Compose([
+#             transforms.ToTensor(),
+#             transforms.Normalize(MNIST_MEAN, MNIST_STD),
+#         ])
+#         train_dst = MNIST(root=image_dir, train=True, download=True, transform=transform_train)
+#         train_iter = torch.utils.data.DataLoader(train_dst, batch_size=batch_size, shuffle=True, pin_memory=True,
+#                                                  num_workers=num_threads)
+#         return train_iter
+#     else:
+#         transform_test = transforms.Compose([
+#             transforms.ToTensor(),
+#             transforms.Normalize(MNIST_MEAN, MNIST_STD),
+#         ])
+#         test_dst = MNIST(root=image_dir, train=False, download=True, transform=transform_test)
+#         test_iter = torch.utils.data.DataLoader(test_dst, batch_size=batch_size, shuffle=False, pin_memory=True,
+#                                                 num_workers=num_threads)
+#         return test_iter
 
 
-if __name__ == '__main__':
-    train_loader = get_mnist_iter_dali(type='train', image_dir='/home/panyu/download/datas', batch_size=256,
-                                       num_threads=4, seed=233, dali_cpu=True)
-    print('start iterate')
-    start = time.time()
-    for i, data in enumerate(train_loader):
-        images = data[0]["data"].cuda(non_blocking=True)
-        labels = data[0]["label"].squeeze().long().cuda(non_blocking=True)
-    end = time.time()
-    print('end iterate')
-    print('dali iterate time: %fs' % (end - start))
-
-    train_loader = get_mnist_iter_torch(type='train', image_dir='/home/panyu/download/datas', batch_size=256,
-                                        num_threads=4)
-    print('start iterate')
-    start = time.time()
-    for i, data in enumerate(train_loader):
-        images = data[0].cuda(non_blocking=True)
-        labels = data[1].cuda(non_blocking=True)
-    end = time.time()
-    print('end iterate')
-    print('torch iterate time: %fs' % (end - start))
+# if __name__ == '__main__':
+#     train_loader = get_mnist_iter_dali(type='train', image_dir='/home/panyu/download/datas', batch_size=256,
+#                                        num_threads=4, seed=233, dali_cpu=True)
+#     print('start iterate')
+#     start = time.time()
+#     for i, data in enumerate(train_loader):
+#         images = data[0]["data"].cuda(non_blocking=True)
+#         labels = data[0]["label"].squeeze().long().cuda(non_blocking=True)
+#     end = time.time()
+#     print('end iterate')
+#     print('dali iterate time: %fs' % (end - start))
+#
+#     train_loader = get_mnist_iter_torch(type='train', image_dir='/home/panyu/download/datas', batch_size=256,
+#                                         num_threads=4)
+#     print('start iterate')
+#     start = time.time()
+#     for i, data in enumerate(train_loader):
+#         images = data[0].cuda(non_blocking=True)
+#         labels = data[1].cuda(non_blocking=True)
+#     end = time.time()
+#     print('end iterate')
+#     print('torch iterate time: %fs' % (end - start))

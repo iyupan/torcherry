@@ -130,11 +130,10 @@ def get_imagenet_iter_dali(type, image_dir, batch_size, num_threads, gpu_num, cr
             pip_train.build()
             dali_pipes.append(pip_train)
 
-        iter_size = dali_pipes[0].epoch_size("Reader")
         dali_trains = Len_DALIClassificationIterator(dali_pipes,
-                                                             size=iter_size,
                                                              fill_last_batch=False,
                                                              auto_reset=auto_reset,
+                                                     reader_name="Reader"
                                                              )
         return dali_trains
     elif type == 'val':
@@ -147,11 +146,10 @@ def get_imagenet_iter_dali(type, image_dir, batch_size, num_threads, gpu_num, cr
             pip_val.build()
             dali_pipes.append(pip_val)
 
-        iter_size = dali_pipes[0].epoch_size("Reader")
         dali_vals = Len_DALIClassificationIterator(dali_pipes,
-                                                     size=iter_size,
                                                      fill_last_batch=False,
                                                      auto_reset=auto_reset,
+                                                   reader_name="Reader"
                                                      )
         return dali_vals
 

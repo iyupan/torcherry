@@ -5,7 +5,7 @@
 
 from managpu import GpuManager
 my_gpu = GpuManager()
-my_gpu.set_by_memory(2)
+my_gpu.set_by_memory(1)
 
 import os
 import time

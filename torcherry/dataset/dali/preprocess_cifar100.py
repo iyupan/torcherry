@@ -67,7 +67,7 @@ class HybridTrainPipe_CIFAR100(Pipeline):
     def define_graph(self):
         rng = self.coin()
 
-        inputs = self.input()
+        inputs = self.input("Reader")
         output = inputs["image"].gpu()
         output = self.reshape(output)
         output = self.pad(output)
@@ -108,7 +108,7 @@ class HybridValPipe_CIFAR100(Pipeline):
                                             )
 
     def define_graph(self):
-        inputs = self.input()
+        inputs = self.input("Reader")
         output = inputs["image"].gpu()
         output = self.reshape(output)
         output = self.cmnp(output)
@@ -132,8 +132,8 @@ def get_cifar100_iter_dali(type, image_dir, batch_size, num_threads, seed, dali_
                                               crop=32)
             pip_train.build()
             pipes.append(pip_train)
-        dali_iter_train = Len_DALIClassificationIterator(pipes, size=50000,
-                                                     fill_last_batch=True, auto_reset=auto_reset)
+        dali_iter_train = Len_DALIClassificationIterator(pipes,
+                                                     fill_last_batch=True, auto_reset=auto_reset, reader_name="Reader")
         return dali_iter_train
 
     elif type == 'val':
@@ -143,8 +143,8 @@ def get_cifar100_iter_dali(type, image_dir, batch_size, num_threads, seed, dali_
                                           gpu_num=gpu_num, data_dir=image_dir, seed=seed, dali_cpu=dali_cpu)
             pip_val.build()
             pipes.append(pip_val)
-        dali_iter_val = Len_DALIClassificationIterator(pipes, size=10000,
-                                                   fill_last_batch=False, auto_reset=auto_reset)
+        dali_iter_val = Len_DALIClassificationIterator(pipes,
+                                                   fill_last_batch=False, auto_reset=auto_reset, reader_name="Reader")
         return dali_iter_val
 
 

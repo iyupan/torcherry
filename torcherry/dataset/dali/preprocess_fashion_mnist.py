@@ -123,9 +123,8 @@ def get_fashion_mnist_iter_dali(type, image_dir, batch_size, num_threads, seed, 
                                               crop=28)
             pip_train.build()
             pipes.append(pip_train)
-        iter_size = pipes[0].epoch_size("Reader")
-        dali_iter_train = Len_DALIClassificationIterator(pipes, size=iter_size,
-                                                     fill_last_batch=True, auto_reset=auto_reset)
+        dali_iter_train = Len_DALIClassificationIterator(pipes,
+                                                     fill_last_batch=True, auto_reset=auto_reset, reader_name="Reader")
         return dali_iter_train
 
     elif type == 'val':
@@ -135,9 +134,8 @@ def get_fashion_mnist_iter_dali(type, image_dir, batch_size, num_threads, seed, 
                                           gpu_num=gpu_num, data_dir=image_dir, seed=seed, dali_cpu=dali_cpu)
             pip_val.build()
             pipes.append(pip_val)
-        iter_size = pipes[0].epoch_size("Reader")
-        dali_iter_val = Len_DALIClassificationIterator(pipes, size=iter_size,
-                                                   fill_last_batch=False, auto_reset=auto_reset)
+        dali_iter_val = Len_DALIClassificationIterator(pipes,
+                                                   fill_last_batch=False, auto_reset=auto_reset, reader_name="Reader")
         return dali_iter_val
 
 
