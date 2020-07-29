@@ -18,7 +18,7 @@ from torch.utils.data import DataLoader
 from torchvision.datasets import MNIST
 from torchvision import transforms
 
-from torcherry.dataset.dali import get_mnist_iter_dali
+from torcherry.dataset.dali import get_mnist_iter_dali, get_cifar10_iter_dali
 
 import torcherry as tc
 from torcherry.utils.metric import MetricAccuracy, MetricLoss
@@ -63,6 +63,8 @@ class CModel(tc.CherryModule):
         self.train_loader_type = "dali"
         return get_mnist_iter_dali(type='train', image_dir=os.getcwd(), batch_size=32, dali_cpu=False,
                                    num_threads=4, seed=233, gpu_num=1)
+        # return get_cifar10_iter_dali(type='train', image_dir=os.getcwd(), batch_size=32, dali_cpu=False,
+        #                            num_threads=4, seed=233, gpu_num=1)
 
     def tc_val_loader(self):
         # self.val_loader_type = "torchvision"
@@ -72,6 +74,8 @@ class CModel(tc.CherryModule):
         self.val_loader_type = "dali"
         return get_mnist_iter_dali(type='val', image_dir=os.getcwd(), batch_size=32, dali_cpu=False,
                                    num_threads=4, seed=233, gpu_num=1)
+        # return get_cifar10_iter_dali(type='val', image_dir=os.getcwd(), batch_size=32, dali_cpu=False,
+        #                            num_threads=4, seed=233, gpu_num=1)
 
     def tc_test_loader(self):
         # self.test_loader_type = "torchvision"

@@ -118,3 +118,4 @@ dmypy.json
 save
 MNIST
 MNIST_tfrecords
+CIFAR10_tfrecords

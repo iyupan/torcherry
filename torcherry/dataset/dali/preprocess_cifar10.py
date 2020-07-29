@@ -64,7 +64,7 @@ class HybridTrainPipe_CIFAR10(Pipeline):
     def define_graph(self):
         rng = self.coin()
 
-        inputs = self.input("Reader")
+        inputs = self.input(name="Reader")
         output = inputs["image"].gpu()
         output = self.reshape(output)
         output = self.pad(output)
@@ -103,7 +103,7 @@ class HybridValPipe_CIFAR10(Pipeline):
                                             )
 
     def define_graph(self):
-        inputs = self.input("Reader")
+        inputs = self.input(name="Reader")
         output = inputs["image"].gpu()
         output = self.reshape(output)
         output = self.cmnp(output)
