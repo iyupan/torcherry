@@ -10,9 +10,9 @@ import time
 
 import math
 
-import torch
-import torchvision.transforms as transforms
-from torchvision.datasets import CIFAR100
+# import torch
+# import torchvision.transforms as transforms
+# from torchvision.datasets import CIFAR100
 
 import nvidia.dali.ops as ops
 import nvidia.dali.types as types
@@ -98,9 +98,8 @@ class HybridValPipe_CIFAR100(Pipeline):
 
         self.reshape = ops.Reshape(device=dali_device, shape=[32, 32, 3], layout="HWC")
         self.cmnp = ops.CropMirrorNormalize(device=dali_device,
-                                            output_dtype=types.FLOAT,
+                                            dtype=types.FLOAT,
                                             output_layout=types.NCHW,
-                                            image_type=types.RGB,
                                             mean=[0.5070751592371323 * 255., 0.48654887331495095 * 255.,
                                                   0.4409178433670343 * 255.],
                                             std=[0.2673342858792401 * 255., 0.2564384629170883 * 255.,
@@ -148,49 +147,49 @@ def get_cifar100_iter_dali(type, image_dir, batch_size, num_threads, seed, dali_
         return dali_iter_val
 
 
-def get_cifar_iter_torch(type, image_dir, batch_size, num_threads, cutout=0):
-    CIFAR_MEAN = [0.5070751592371323, 0.48654887331495095, 0.4409178433670343]
-    CIFAR_STD = [0.2673342858792401, 0.2564384629170883, 0.27615047132568404]
-    if type == 'train':
-        transform_train = transforms.Compose([
-            transforms.RandomCrop(32, padding=4),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
-        ])
-        train_dst = CIFAR100(root=image_dir, train=True, download=True, transform=transform_train)
-        train_iter = torch.utils.data.DataLoader(train_dst, batch_size=batch_size, shuffle=True, pin_memory=True,
-                                                 num_workers=num_threads)
-        return train_iter
-    else:
-        transform_test = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
-        ])
-        test_dst = CIFAR100(root=image_dir, train=False, download=True, transform=transform_test)
-        test_iter = torch.utils.data.DataLoader(test_dst, batch_size=batch_size, shuffle=False, pin_memory=True,
-                                                num_workers=num_threads)
-        return test_iter
-
-if __name__ == '__main__':
-    train_loader = get_cifar100_iter_dali(type='train', image_dir='/home/panyu/download/datas', batch_size=256,
-                                       num_threads=4, seed=233, dali_cpu=True)
-    print('start iterate')
-    start = time.time()
-    for i, data in enumerate(train_loader):
-        images = data[0]["data"].cuda(non_blocking=True)
-        labels = data[0]["label"].squeeze().long().cuda(non_blocking=True)
-    end = time.time()
-    print('end iterate')
-    print('dali iterate time: %fs' % (end - start))
-
-    train_loader = get_cifar_iter_torch(type='train', image_dir='/home/panyu/download/datas', batch_size=256,
-                                        num_threads=4)
-    print('start iterate')
-    start = time.time()
-    for i, data in enumerate(train_loader):
-        images = data[0].cuda(non_blocking=True)
-        labels = data[1].cuda(non_blocking=True)
-    end = time.time()
-    print('end iterate')
-    print('torch iterate time: %fs' % (end - start))
+# def get_cifar_iter_torch(type, image_dir, batch_size, num_threads, cutout=0):
+#     CIFAR_MEAN = [0.5070751592371323, 0.48654887331495095, 0.4409178433670343]
+#     CIFAR_STD = [0.2673342858792401, 0.2564384629170883, 0.27615047132568404]
+#     if type == 'train':
+#         transform_train = transforms.Compose([
+#             transforms.RandomCrop(32, padding=4),
+#             transforms.RandomHorizontalFlip(),
+#             transforms.ToTensor(),
+#             transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+#         ])
+#         train_dst = CIFAR100(root=image_dir, train=True, download=True, transform=transform_train)
+#         train_iter = torch.utils.data.DataLoader(train_dst, batch_size=batch_size, shuffle=True, pin_memory=True,
+#                                                  num_workers=num_threads)
+#         return train_iter
+#     else:
+#         transform_test = transforms.Compose([
+#             transforms.ToTensor(),
+#             transforms.Normalize(CIFAR_MEAN, CIFAR_STD),
+#         ])
+#         test_dst = CIFAR100(root=image_dir, train=False, download=True, transform=transform_test)
+#         test_iter = torch.utils.data.DataLoader(test_dst, batch_size=batch_size, shuffle=False, pin_memory=True,
+#                                                 num_workers=num_threads)
+#         return test_iter
+#
+# if __name__ == '__main__':
+#     train_loader = get_cifar100_iter_dali(type='train', image_dir='/home/panyu/download/datas', batch_size=256,
+#                                        num_threads=4, seed=233, dali_cpu=True)
+#     print('start iterate')
+#     start = time.time()
+#     for i, data in enumerate(train_loader):
+#         images = data[0]["data"].cuda(non_blocking=True)
+#         labels = data[0]["label"].squeeze().long().cuda(non_blocking=True)
+#     end = time.time()
+#     print('end iterate')
+#     print('dali iterate time: %fs' % (end - start))
+#
+#     train_loader = get_cifar_iter_torch(type='train', image_dir='/home/panyu/download/datas', batch_size=256,
+#                                         num_threads=4)
+#     print('start iterate')
+#     start = time.time()
+#     for i, data in enumerate(train_loader):
+#         images = data[0].cuda(non_blocking=True)
+#         labels = data[1].cuda(non_blocking=True)
+#     end = time.time()
+#     print('end iterate')
+#     print('torch iterate time: %fs' % (end - start))

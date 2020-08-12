@@ -16,9 +16,9 @@ import time
 
 import math
 
-import torch
-import torchvision.transforms as transforms
-from torchvision.datasets import FashionMNIST
+# import torch
+# import torchvision.transforms as transforms
+# from torchvision.datasets import FashionMNIST
 
 import nvidia.dali.ops as ops
 import nvidia.dali.types as types
@@ -55,9 +55,8 @@ class HybridTrainPipe_FASHION_MNIST(Pipeline):
 
         self.reshape = ops.Reshape(device=dali_device, shape=[28, 28, 1], layout="HWC")
         self.cmnp = ops.CropMirrorNormalize(device=dali_device,
-                                            output_dtype=types.FLOAT,
+                                            dtype=types.FLOAT,
                                             output_layout=types.NCHW,
-                                            image_type=types.RGB,
                                             mean=[0.5 * 255.],
                                             std=[0.5 * 255.]
                                             )
@@ -91,9 +90,8 @@ class HybridValPipe_FASHION_MNIST(Pipeline):
 
         self.reshape = ops.Reshape(device=dali_device, shape=[28, 28, 1], layout="HWC")
         self.cmnp = ops.CropMirrorNormalize(device=dali_device,
-                                            output_dtype=types.FLOAT,
+                                            dtype=types.FLOAT,
                                             output_layout=types.NCHW,
-                                            image_type=types.RGB,
                                             mean=[0.5 * 255.],
                                             std=[0.5 * 255.]
                                             )
@@ -139,48 +137,48 @@ def get_fashion_mnist_iter_dali(type, image_dir, batch_size, num_threads, seed, 
         return dali_iter_val
 
 
-def get_fashion_mnist_iter_torch(type, image_dir, batch_size, num_threads, cutout=0):
-    FASHION_MNIST_MEAN = [0.5,]
-    FASHION_MNIST_STD = [0.5,]
-    if type == 'train':
-        transform_train = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(FASHION_MNIST_MEAN, FASHION_MNIST_STD),
-        ])
-        train_dst = FashionMNIST(root=image_dir, train=True, download=True, transform=transform_train)
-        train_iter = torch.utils.data.DataLoader(train_dst, batch_size=batch_size, shuffle=True, pin_memory=True,
-                                                 num_workers=num_threads)
-        return train_iter
-    else:
-        transform_test = transforms.Compose([
-            transforms.ToTensor(),
-            transforms.Normalize(FASHION_MNIST_MEAN, FASHION_MNIST_STD),
-        ])
-        test_dst = FashionMNIST(root=image_dir, train=False, download=True, transform=transform_test)
-        test_iter = torch.utils.data.DataLoader(test_dst, batch_size=batch_size, shuffle=False, pin_memory=True,
-                                                num_workers=num_threads)
-        return test_iter
-
-
-if __name__ == '__main__':
-    train_loader = get_fashion_mnist_iter_dali(type='train', image_dir='/home/panyu/download/datas', batch_size=256,
-                                       num_threads=4, seed=233, dali_cpu=True)
-    print('start iterate')
-    start = time.time()
-    for i, data in enumerate(train_loader):
-        images = data[0]["data"].cuda(non_blocking=True)
-        labels = data[0]["label"].squeeze().long().cuda(non_blocking=True)
-    end = time.time()
-    print('end iterate')
-    print('dali iterate time: %fs' % (end - start))
-
-    train_loader = get_fashion_mnist_iter_torch(type='train', image_dir='/home/panyu/download/datas', batch_size=256,
-                                        num_threads=4)
-    print('start iterate')
-    start = time.time()
-    for i, data in enumerate(train_loader):
-        images = data[0].cuda(non_blocking=True)
-        labels = data[1].cuda(non_blocking=True)
-    end = time.time()
-    print('end iterate')
-    print('torch iterate time: %fs' % (end - start))
+# def get_fashion_mnist_iter_torch(type, image_dir, batch_size, num_threads, cutout=0):
+#     FASHION_MNIST_MEAN = [0.5,]
+#     FASHION_MNIST_STD = [0.5,]
+#     if type == 'train':
+#         transform_train = transforms.Compose([
+#             transforms.ToTensor(),
+#             transforms.Normalize(FASHION_MNIST_MEAN, FASHION_MNIST_STD),
+#         ])
+#         train_dst = FashionMNIST(root=image_dir, train=True, download=True, transform=transform_train)
+#         train_iter = torch.utils.data.DataLoader(train_dst, batch_size=batch_size, shuffle=True, pin_memory=True,
+#                                                  num_workers=num_threads)
+#         return train_iter
+#     else:
+#         transform_test = transforms.Compose([
+#             transforms.ToTensor(),
+#             transforms.Normalize(FASHION_MNIST_MEAN, FASHION_MNIST_STD),
+#         ])
+#         test_dst = FashionMNIST(root=image_dir, train=False, download=True, transform=transform_test)
+#         test_iter = torch.utils.data.DataLoader(test_dst, batch_size=batch_size, shuffle=False, pin_memory=True,
+#                                                 num_workers=num_threads)
+#         return test_iter
+#
+#
+# if __name__ == '__main__':
+#     train_loader = get_fashion_mnist_iter_dali(type='train', image_dir='/home/panyu/download/datas', batch_size=256,
+#                                        num_threads=4, seed=233, dali_cpu=True)
+#     print('start iterate')
+#     start = time.time()
+#     for i, data in enumerate(train_loader):
+#         images = data[0]["data"].cuda(non_blocking=True)
+#         labels = data[0]["label"].squeeze().long().cuda(non_blocking=True)
+#     end = time.time()
+#     print('end iterate')
+#     print('dali iterate time: %fs' % (end - start))
+#
+#     train_loader = get_fashion_mnist_iter_torch(type='train', image_dir='/home/panyu/download/datas', batch_size=256,
+#                                         num_threads=4)
+#     print('start iterate')
+#     start = time.time()
+#     for i, data in enumerate(train_loader):
+#         images = data[0].cuda(non_blocking=True)
+#         labels = data[1].cuda(non_blocking=True)
+#     end = time.time()
+#     print('end iterate')
+#     print('torch iterate time: %fs' % (end - start))

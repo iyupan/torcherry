@@ -8,9 +8,9 @@ import os
 
 import math
 
-import torch.utils.data
-import torchvision.datasets as datasets
-import torchvision.transforms as transforms
+# import torch.utils.data
+# import torchvision.datasets as datasets
+# import torchvision.transforms as transforms
 
 import nvidia.dali.ops as ops
 import nvidia.dali.types as types
@@ -52,9 +52,8 @@ class HybridTrainPipe(Pipeline):
 
         self.res = ops.RandomResizedCrop(device=dali_device, size=crop, random_area=[0.08, 1.25])
         self.cmnp = ops.CropMirrorNormalize(device=dali_device,
-                                            output_dtype=types.FLOAT,
+                                            dtype=types.FLOAT,
                                             output_layout=types.NCHW,
-                                            image_type=types.RGB,
                                             mean=[0.485 * 255, 0.456 * 255, 0.406 * 255],
                                             std=[0.229 * 255, 0.224 * 255, 0.225 * 255])
         self.coin = ops.CoinFlip(probability=0.5)
@@ -100,10 +99,9 @@ class HybridValPipe(Pipeline):
 
         self.res = ops.Resize(device=dali_device, resize_shorter=size, interp_type=types.INTERP_TRIANGULAR)
         self.cmnp = ops.CropMirrorNormalize(device=dali_device,
-                                            output_dtype=types.FLOAT,
+                                            dtype=types.FLOAT,
                                             output_layout=types.NCHW,
                                             crop=(crop, crop),
-                                            image_type=types.RGB,
                                             mean=[0.485 * 255, 0.456 * 255, 0.406 * 255],
                                             std=[0.229 * 255, 0.224 * 255, 0.225 * 255])
 
@@ -154,29 +152,29 @@ def get_imagenet_iter_dali(type, image_dir, batch_size, num_threads, gpu_num, cr
         return dali_vals
 
 
-def get_imagenet_iter_torch(type, image_dir, batch_size, num_threads, device_id, num_gpus, crop, val_size=256,
-                            world_size=1, local_rank=0):
-    if type == 'train':
-        transform = transforms.Compose([
-            transforms.RandomResizedCrop(crop, scale=(0.08, 1.25)),
-            transforms.RandomHorizontalFlip(),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
-        dataset = datasets.ImageFolder(os.path.join(image_dir, 'train'), transform)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_threads,
-                                                 pin_memory=True)
-    elif type == 'val':
-        transform = transforms.Compose([
-            transforms.Resize(val_size),
-            transforms.CenterCrop(crop),
-            transforms.ToTensor(),
-            transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
-        ])
-        dataset = datasets.ImageFolder(os.path.join(image_dir, 'val'), transform)
-        dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_threads,
-                                                 pin_memory=True)
-    else:
-        raise  ValueError("The type %s is not founded." % type)
-
-    return dataloader
+# def get_imagenet_iter_torch(type, image_dir, batch_size, num_threads, device_id, num_gpus, crop, val_size=256,
+#                             world_size=1, local_rank=0):
+#     if type == 'train':
+#         transform = transforms.Compose([
+#             transforms.RandomResizedCrop(crop, scale=(0.08, 1.25)),
+#             transforms.RandomHorizontalFlip(),
+#             transforms.ToTensor(),
+#             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+#         ])
+#         dataset = datasets.ImageFolder(os.path.join(image_dir, 'train'), transform)
+#         dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=True, num_workers=num_threads,
+#                                                  pin_memory=True)
+#     elif type == 'val':
+#         transform = transforms.Compose([
+#             transforms.Resize(val_size),
+#             transforms.CenterCrop(crop),
+#             transforms.ToTensor(),
+#             transforms.Normalize(mean=[0.485, 0.456, 0.406], std=[0.229, 0.224, 0.225]),
+#         ])
+#         dataset = datasets.ImageFolder(os.path.join(image_dir, 'val'), transform)
+#         dataloader = torch.utils.data.DataLoader(dataset, batch_size=batch_size, shuffle=False, num_workers=num_threads,
+#                                                  pin_memory=True)
+#     else:
+#         raise  ValueError("The type %s is not founded." % type)
+#
+#     return dataloader

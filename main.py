@@ -29,6 +29,7 @@ from torcherry.utils.util import set_env_seed
 class CModel(tc.CherryModule):
     def __init__(self):
         super().__init__()
+        self.gpu_num = torch.cuda.device_count()
         self.l1 = torch.nn.Linear(28 * 28, 10)
 
     def forward(self, x):
@@ -61,8 +62,8 @@ class CModel(tc.CherryModule):
         # loader = DataLoader(dataset, batch_size=32, num_workers=4, shuffle=True)
         # return loader
         self.train_loader_type = "dali"
-        return get_mnist_iter_dali(type='train', image_dir=os.getcwd(), batch_size=32, dali_cpu=False,
-                                   num_threads=4, seed=233, gpu_num=1)
+        return get_mnist_iter_dali(type='train', image_dir=os.getcwd(), batch_size=31, dali_cpu=False,
+                                   num_threads=4, seed=233, gpu_num=self.gpu_num)
         # return get_cifar10_iter_dali(type='train', image_dir=os.getcwd(), batch_size=32, dali_cpu=False,
         #                            num_threads=4, seed=233, gpu_num=1)
 
@@ -72,8 +73,8 @@ class CModel(tc.CherryModule):
         # loader = DataLoader(dataset, batch_size=32, num_workers=4, shuffle=True)
         # return loader
         self.val_loader_type = "dali"
-        return get_mnist_iter_dali(type='val', image_dir=os.getcwd(), batch_size=32, dali_cpu=False,
-                                   num_threads=4, seed=233, gpu_num=1)
+        return get_mnist_iter_dali(type='val', image_dir=os.getcwd(), batch_size=31, dali_cpu=False,
+                                   num_threads=4, seed=233, gpu_num=self.gpu_num)
         # return get_cifar10_iter_dali(type='val', image_dir=os.getcwd(), batch_size=32, dali_cpu=False,
         #                            num_threads=4, seed=233, gpu_num=1)
 
@@ -83,7 +84,7 @@ class CModel(tc.CherryModule):
         # loader = DataLoader(dataset, batch_size=32, num_workers=4, shuffle=True)
         # return loader
         self.test_loader_type = "dali"
-        return get_mnist_iter_dali(type='val', image_dir=os.getcwd(), batch_size=32, dali_cpu=False,
+        return get_mnist_iter_dali(type='val', image_dir=os.getcwd(), batch_size=31, dali_cpu=False,
                                    num_threads=4, seed=233, gpu_num=1)
 
 

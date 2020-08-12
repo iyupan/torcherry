@@ -16,9 +16,9 @@ import time
 
 import math
 
-import torch
-import torchvision.transforms as transforms
-from torchvision.datasets import MNIST
+# import torch
+# import torchvision.transforms as transforms
+# from torchvision.datasets import MNIST
 
 import nvidia.dali.ops as ops
 import nvidia.dali.types as types
@@ -55,9 +55,8 @@ class HybridTrainPipe_MNIST(Pipeline):
 
         self.reshape = ops.Reshape(device=dali_device, shape=[28, 28, 1], layout="HWC")
         self.cmnp = ops.CropMirrorNormalize(device=dali_device,
-                                            output_dtype=types.FLOAT,
+                                            dtype=types.FLOAT,
                                             output_layout=types.NCHW,
-                                            image_type=types.RGB,
                                             mean=[0.1307 * 255.],
                                             std=[0.3081 * 255.]
                                             )
@@ -91,9 +90,8 @@ class HybridValPipe_MNIST(Pipeline):
 
         self.reshape = ops.Reshape(device=dali_device, shape=[28, 28, 1], layout="HWC")
         self.cmnp = ops.CropMirrorNormalize(device=dali_device,
-                                            output_dtype=types.FLOAT,
+                                            dtype=types.FLOAT,
                                             output_layout=types.NCHW,
-                                            image_type=types.RGB,
                                             mean=[0.1307 * 255.],
                                             std=[0.3081 * 255.]
                                             )

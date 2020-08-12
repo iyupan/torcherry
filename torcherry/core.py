@@ -119,9 +119,9 @@ class Runner(object):
         # --------------- Training --------------
 
         if model.train_loader_type == "dali":
-            self.train_loader_loop_func = self._dali_step
+            self.train_func = self._dali_train_func
         elif model.train_loader_type == "torchvision":
-            self.train_loader_loop_func = self._torchvision_step
+            self.train_func = self._torchvision_train_func
         else:
             raise ValueError("The loader_loop_func of Module must be defined!")
 
@@ -135,7 +135,7 @@ class Runner(object):
             start_time_epoch = time.time()
             with tqdm(total=len(self.train_loader)) as pbar:
                 for data_pairs in self.train_loader:
-                    self.train_loader_loop_func(pbar, data_pairs)
+                    self.train_func(pbar, data_pairs)
 
             # Update Learning Rate
             self.lr_schedule.step()
@@ -241,8 +241,8 @@ class Runner(object):
             for test_metric in res_test:
                 print(test_metric)
 
-    def _dali_step(self, pbar, data_pairs):
-        for data_pair in data_pairs:
+    def _dali_train_func(self, pbar, loader_data):
+        for data_pair in loader_data:
             data = data_pair["data"].to(self.device, non_blocking=True)
             target = data_pair["label"].squeeze().long().to(self.device, non_blocking=True).view(-1)
 
@@ -253,11 +253,11 @@ class Runner(object):
             loss.backward()
             self.optimizer.step()
 
-            pbar.update(1)
+        pbar.update(1)
 
-    def _torchvision_step(self, pbar, data_pairs):
-        data = data_pairs[0].to(self.device, non_blocking=True)
-        target = data_pairs[1].squeeze().long().to(self.device, non_blocking=True).view(-1)
+    def _torchvision_train_func(self, pbar, loader_data):
+        data = loader_data[0].to(self.device, non_blocking=True)
+        target = loader_data[1].squeeze().long().to(self.device, non_blocking=True).view(-1)
 
         self.optimizer.zero_grad()
 
@@ -275,8 +275,8 @@ class Runner(object):
         self.model.eval()
         with torch.no_grad():
             with tqdm(total=len(loader)) as pbar:
-                for data_pairs in loader:
-                    for data_pair in data_pairs:
+                for loader_data in loader:
+                    for data_pair in loader_data:
                         data = data_pair["data"].to(self.device, non_blocking=True)
                         target = data_pair["label"].squeeze().long().to(self.device, non_blocking=True).view(-1)
                         output_logits, loss = self.val_step_func(self.model, data, target)
@@ -284,7 +284,7 @@ class Runner(object):
                         for metric in metrics_:
                             metric.add_metric_record(output_logits, target, loss)
 
-                        pbar.update(1)
+                    pbar.update(1)
 
         return metrics_
 
@@ -294,9 +294,9 @@ class Runner(object):
         self.model.eval()
         with torch.no_grad():
             with tqdm(total=len(loader)) as pbar:
-                for data_pair in loader:
-                    data = data_pair[0].to(self.device, non_blocking=True)
-                    target = data_pair[1].squeeze().long().to(self.device, non_blocking=True).view(-1)
+                for loader_data in loader:
+                    data = loader_data[0].to(self.device, non_blocking=True)
+                    target = loader_data[1].squeeze().long().to(self.device, non_blocking=True).view(-1)
                     output_logits, loss = self.val_step_func(self.model, data, target)
 
                     for metric in metrics_:
@@ -312,8 +312,8 @@ class Runner(object):
         self.model.eval()
         with torch.no_grad():
             with tqdm(total=len(loader)) as pbar:
-                for data_pairs in loader:
-                    for data_pair in data_pairs:
+                for loader_data in loader:
+                    for data_pair in loader_data:
                         data = data_pair["data"].to(self.device, non_blocking=True)
                         target = data_pair["label"].squeeze().long().to(self.device, non_blocking=True).view(-1)
                         output_logits, loss = self.test_step_func(self.model, data, target)
@@ -321,7 +321,7 @@ class Runner(object):
                         for metric in metrics_:
                             metric.add_metric_record(output_logits, target, loss)
 
-                        pbar.update(1)
+                    pbar.update(1)
 
         return metrics_
 
@@ -331,9 +331,9 @@ class Runner(object):
         self.model.eval()
         with torch.no_grad():
             with tqdm(total=len(loader)) as pbar:
-                for data_pair in loader:
-                    data = data_pair[0].to(self.device, non_blocking=True)
-                    target = data_pair[1].squeeze().long().to(self.device, non_blocking=True).view(-1)
+                for loader_data in loader:
+                    data = loader_data[0].to(self.device, non_blocking=True)
+                    target = loader_data[1].squeeze().long().to(self.device, non_blocking=True).view(-1)
                     output_logits, loss = self.test_step_func(self.model, data, target)
 
                     for metric in metrics_:
