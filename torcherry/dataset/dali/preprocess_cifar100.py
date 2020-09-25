@@ -53,9 +53,8 @@ class HybridTrainPipe_CIFAR100(Pipeline):
         self.uniform = ops.Uniform(range=(0., 1.))
         self.crop = ops.Crop(device=dali_device, crop_h=crop, crop_w=crop)
         self.cmnp = ops.CropMirrorNormalize(device=dali_device,
-                                            output_dtype=types.FLOAT,
+                                            dtype=types.FLOAT,
                                             output_layout=types.NCHW,
-                                            image_type=types.RGB,
                                             mean=[0.5070751592371323 * 255., 0.48654887331495095 * 255.,
                                                   0.4409178433670343 * 255.],
                                             std=[0.2673342858792401 * 255., 0.2564384629170883 * 255.,
