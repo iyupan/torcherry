@@ -1,10 +1,7 @@
 # -*- coding: utf-8 -*-
 
+from torcherry import __version__, __author__
 from setuptools import setup, find_packages
-
-
-__author__ = "Perry"
-__version__ = "0.1.0"
 
 setup(
       name='torcherry',
