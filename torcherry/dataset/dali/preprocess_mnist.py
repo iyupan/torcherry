@@ -14,7 +14,6 @@ import nvidia.dali
 assert StrictVersion(nvidia.dali.__version__) >= StrictVersion("1.0.0"), "Dali version should be higher than 1.0.0!"
 
 import nvidia.dali.tfrecord as tfrec
-# from nvidia.dali.pipeline import Pipeline
 from nvidia.dali.plugin.pytorch import DALIClassificationIterator, LastBatchPolicy
 from nvidia.dali.pipeline import pipeline_def
 import nvidia.dali.types as types
@@ -94,7 +93,7 @@ def create_dali_mnist_tfrec_pipeline(data_path, data_index_path, type, num_shard
                                         initial_fill=2048,
                                         )
         images = inputs["image"]
-        images = fn.reshape(images,
+        images = fn.reshape(images.gpu(),
                             device=dali_device,
                             shape=[28, 28, 1],
                             layout="HWC")
@@ -102,34 +101,39 @@ def create_dali_mnist_tfrec_pipeline(data_path, data_index_path, type, num_shard
                                           device=dali_device,
                                           dtype=types.FLOAT,
                                           output_layout="CHW",
-                                          crop=(crop, crop),
                                           mean=[0.1307 * 255.],
                                           std=[0.3081 * 255.],
                                           mirror=False)
-        labels = inputs["label"]
+        labels = inputs["label"].gpu()
 
-        # inputs = fn.readers.tfrecord(
-        #     path=tfrecord,
-        #     index_path=tfrecord_idx,
-        #     features={
-        #         "image/encoded": tfrec.FixedLenFeature((), tfrec.string, ""),
-        #         "image/class/label": tfrec.FixedLenFeature([1], tfrec.int64, -1),
-        #         "image/class/text": tfrec.FixedLenFeature([], tfrec.string, ""),
-        #         "image/object/bbox/xmin": tfrec.VarLenFeature(tfrec.float32, 0.0),
-        #         "image/object/bbox/ymin": tfrec.VarLenFeature(tfrec.float32, 0.0),
-        #         "image/object/bbox/xmax": tfrec.VarLenFeature(tfrec.float32, 0.0),
-        #         "image/object/bbox/ymax": tfrec.VarLenFeature(tfrec.float32, 0.0)})
+    elif type == "val":
+        inputs = fn.readers.tfrecord(path=data_path,
+                                     index_path=data_index_path,
+                                     features={
+                                         'image': tfrec.FixedLenFeature((), tfrec.string, ""),
+                                         'label': tfrec.FixedLenFeature([1], tfrec.int64, -1),
+                                     },
+                                     num_shards=num_shards,
+                                     shard_id=shard_id,
+                                     name="Reader",
+                                     )
+        images = inputs["image"]
+        images = fn.reshape(images.gpu(),
+                            device=dali_device,
+                            shape=[28, 28, 1],
+                            layout="HWC")
+        images = fn.crop_mirror_normalize(images,
+                                          device=dali_device,
+                                          dtype=types.FLOAT,
+                                          output_layout="CHW",
+                                          mean=[0.1307 * 255.],
+                                          std=[0.3081 * 255.],
+                                          mirror=False)
+        labels = inputs["label"].gpu()
+    else:
+        raise ValueError("Type %s is not existed!" % type)
 
-        # images = fn.decoders.image(jpegs, device="mixed", output_type=types.RGB)
-        # resized = fn.resize(images, device="gpu", resize_shorter=256.)
-        # output = fn.crop_mirror_normalize(
-        #     resized,
-        #     dtype=types.FLOAT,
-        #     crop=(224, 224),
-        #     mean=[0., 0., 0.],
-        #     std=[1., 1., 1.])
-
-        return images, labels
+    return images, labels
 
 
 def get_mnist_iter_dali(type, image_dir, batch_size, num_threads, seed, dali_cpu, gpu_num, auto_reset=True):
@@ -158,40 +162,33 @@ def get_mnist_iter_dali(type, image_dir, batch_size, num_threads, seed, dali_cpu
             pipe.build()
             pipes.append(pipe)
 
-            import matplotlib.gridspec as gridspec
-            import matplotlib.pyplot as plt
-            import numpy as np
+    elif type == 'val':
+        val_image_path = os.path.join(data_path, "mnist_test.tfrecords")
+        val_image_index_path = os.path.join(data_path, "mnist_test_idx")
 
-            def show_images(image_batch):
-                columns = 4
-                rows = (128 + 1) // (columns)
-                fig = plt.figure(figsize=(32, (32 // columns) * rows))
-                gs = gridspec.GridSpec(rows, columns)
-                for j in range(30):
-                # for j in range(rows * columns):
-                    plt.subplot(gs[j])
-                    plt.axis("off")
-                    data_img = image_batch.at(j)
-                    data_img = np.squeeze(data_img)
-                    plt.imshow(data_img, cmap=plt.cm.gray)
+        pipes = []
+        for i in range(gpu_num):
+            pipe = create_dali_mnist_tfrec_pipeline(data_path=val_image_path,
+                                                    data_index_path=val_image_index_path,
+                                                    type="val",
 
-            pipe_out = pipe.run()
-            images, labels = pipe_out
-            show_images(images)
-        train_loader = DALIClassificationIterator(pipes, reader_name="Reader", auto_reset=auto_reset, last_batch_policy=LastBatchPolicy.PARTIAL)
-        return train_loader
+                                                    batch_size=batch_size,
+                                                    num_threads=num_threads,
+                                                    device_id=0,
+                                                    seed=seed,
+                                                    crop=28,
+                                                    dali_cpu=dali_cpu,
+                                                    shard_id=i,
+                                                    num_shards=gpu_num,
+                                                    )
+            pipe.build()
+            pipes.append(pipe)
+    else:
+        raise ValueError("Type %s is not existed!" % type)
 
-    # elif type == 'val':
-    #     pipes = []
-    #     for i in range(gpu_num):
-    #         pip_val = HybridValPipe_MNIST(batch_size=batch_size, num_threads=num_threads, shard_id=i,
-    #                                       gpu_num=gpu_num, data_dir=image_dir, seed=seed, dali_cpu=dali_cpu)
-    #         pip_val.build()
-    #         pipes.append(pip_val)
-    #     dali_iter_val = Len_DALIClassificationIterator(pipes,
-    #                                                    fill_last_batch=False, auto_reset=auto_reset,
-    #                                                    reader_name="Reader")
-    #     return dali_iter_val
+    data_loader = Len_DALIClassificationIterator(pipes, reader_name="Reader", auto_reset=auto_reset,
+                                                 last_batch_policy=LastBatchPolicy.PARTIAL)
+    return data_loader
 
 
 # class HybridTrainPipe_MNIST(Pipeline):

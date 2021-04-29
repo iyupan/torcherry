@@ -18,7 +18,7 @@ from torch.optim.lr_scheduler import MultiStepLR
 # from torchvision.datasets import MNIST
 # from torchvision import transforms
 
-from torcherry.dataset.dali import get_mnist_iter_dali, get_cifar10_iter_dali
+from torcherry.dataset.dali import get_mnist_iter_dali, get_cifar10_iter_dali, get_cifar100_iter_dali, get_fashion_mnist_test_iter_dali
 
 import torcherry as tc
 from torcherry.utils.metric import MetricAccuracy, MetricLoss
@@ -62,7 +62,7 @@ class CModel(tc.CherryModule):
         # loader = DataLoader(dataset, batch_size=32, num_workers=4, shuffle=True)
         # return loader
         self.train_loader_type = "dali"
-        return get_mnist_iter_dali(type='train', image_dir=os.getcwd(), batch_size=31, dali_cpu=True,
+        return get_fashion_mnist_test_iter_dali(type='train', image_dir=os.getcwd(), batch_size=31, dali_cpu=False,
                                    num_threads=4, seed=233, gpu_num=self.gpu_num)
         # return get_cifar10_iter_dali(type='train', image_dir=os.getcwd(), batch_size=32, dali_cpu=False,
         #                            num_threads=4, seed=233, gpu_num=1)
@@ -73,7 +73,7 @@ class CModel(tc.CherryModule):
         # loader = DataLoader(dataset, batch_size=32, num_workers=4, shuffle=True)
         # return loader
         self.val_loader_type = "dali"
-        return get_mnist_iter_dali(type='val', image_dir=os.getcwd(), batch_size=31, dali_cpu=False,
+        return get_fashion_mnist_test_iter_dali(type='val', image_dir=os.getcwd(), batch_size=31, dali_cpu=False,
                                    num_threads=4, seed=233, gpu_num=self.gpu_num)
         # return get_cifar10_iter_dali(type='val', image_dir=os.getcwd(), batch_size=32, dali_cpu=False,
         #                            num_threads=4, seed=233, gpu_num=1)
@@ -84,7 +84,7 @@ class CModel(tc.CherryModule):
         # loader = DataLoader(dataset, batch_size=32, num_workers=4, shuffle=True)
         # return loader
         self.test_loader_type = "dali"
-        return get_mnist_iter_dali(type='val', image_dir=os.getcwd(), batch_size=31, dali_cpu=False,
+        return get_fashion_mnist_test_iter_dali(type='val', image_dir=os.getcwd(), batch_size=31, dali_cpu=False,
                                    num_threads=4, seed=233, gpu_num=1)
 
 

@@ -7,15 +7,16 @@
 import os
 
 import math
+from distutils.version import StrictVersion
 
-# import torch.utils.data
-# import torchvision.datasets as datasets
-# import torchvision.transforms as transforms
+import nvidia.dali
+assert StrictVersion(nvidia.dali.__version__) >= StrictVersion("1.0.0"), "Dali version should be higher than 1.0.0!"
 
-import nvidia.dali.ops as ops
+import nvidia.dali.tfrecord as tfrec
+from nvidia.dali.plugin.pytorch import DALIClassificationIterator, LastBatchPolicy
+from nvidia.dali.pipeline import pipeline_def
 import nvidia.dali.types as types
-from nvidia.dali.pipeline import Pipeline
-from nvidia.dali.plugin.pytorch import DALIClassificationIterator, DALIGenericIterator
+import nvidia.dali.fn as fn
 
 
 class Len_DALIClassificationIterator(DALIClassificationIterator):
