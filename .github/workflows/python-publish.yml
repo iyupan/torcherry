@@ -8,7 +8,7 @@ on:
     # Sequence of patterns matched against refs/heads
     branches:
       # Push events on main branch
-      - main
+      - master
 
 jobs:
   deploy:
